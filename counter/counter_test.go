@@ -77,3 +77,41 @@ func TestCounterIncrementMultiThreading(t *testing.T) {
 		})
 	}
 }
+
+func TestCounterDetectRaceCondition(t *testing.T) {
+	writeGorNum := 50
+	readGorNum := 100
+	maxVal := 1_000_000
+	step := 1
+	cnt := New(maxVal, step)
+
+	var wg sync.WaitGroup
+	wg.Add(writeGorNum)
+	wg.Add(readGorNum)
+	t.Run("check data race", func(t *testing.T) {
+		for i := 0; i < writeGorNum; i++ {
+			go func() {
+				defer wg.Done()
+				for {
+					if current := cnt.Increment(); current >= maxVal {
+						return
+					}
+				}
+			}()
+		}
+
+		for i := 0; i < readGorNum; i++ {
+			go func() {
+				defer wg.Done()
+				for {
+					if val := cnt.Val(); val >= maxVal {
+						return
+					}
+				}
+			}()
+		}
+
+		wg.Wait()
+		cnt.Close()
+	})
+}
