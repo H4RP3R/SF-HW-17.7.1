@@ -36,9 +36,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for {
-				if current := cnt.Increment(); current < maxCounterVal {
-					cnt.Increment()
-				} else {
+				if current := cnt.Increment(); current >= maxCounterVal {
 					return
 				}
 			}
